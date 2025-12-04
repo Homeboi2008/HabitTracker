@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import '../models/habit.dart';
 
 class StatisticsScreen extends StatelessWidget {
-  const StatisticsScreen({super.key});
+  final List<Habit> habits;
+
+  const StatisticsScreen({
+    super.key,
+    required this.habits,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,23 +31,25 @@ class StatisticsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const StatisticItem(
-              habitName: 'Читать 30 минут',
-              completedDays: 15,
-              targetDays: 30,
-            ),
-            const SizedBox(height: 20),
-            const StatisticItem(
-              habitName: 'Пить воду',
-              completedDays: 20,
-              targetDays: 30,
-            ),
-            const SizedBox(height: 20),
-            const StatisticItem(
-              habitName: 'Зарядка утром',
-              completedDays: 5,
-              targetDays: 30,
-            ),
+            if (habits.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Text(
+                    'Нет привычек для отображения статистики',
+                    style: TextStyle(fontSize: 16, color: Color(0xFF757575)),
+                  ),
+                ),
+              )
+            else
+              ...habits.map((habit) => Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: StatisticItem(
+                      habitName: habit.title,
+                      completedDays: habit.completedDays,
+                      targetDays: habit.targetDays,
+                    ),
+                  )),
             const SizedBox(height: 32),
             const Divider(
               thickness: 1,
@@ -151,4 +159,3 @@ class StatisticItem extends StatelessWidget {
     );
   }
 }
-

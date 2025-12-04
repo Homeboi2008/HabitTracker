@@ -1,7 +1,36 @@
 import 'package:flutter/material.dart';
 
-class AddHabitScreen extends StatelessWidget {
+class AddHabitScreen extends StatefulWidget {
   const AddHabitScreen({super.key});
+
+  @override
+  State<AddHabitScreen> createState() => _AddHabitScreenState();
+}
+
+class _AddHabitScreenState extends State<AddHabitScreen> {
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Введите название привычки')),
+      );
+      return;
+    }
+
+    Navigator.pop(context, {
+      'title': _titleController.text.trim(),
+      'description': _descriptionController.text.trim(),
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +55,9 @@ class AddHabitScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const TextField(
-              decoration: InputDecoration(
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
                 hintText: 'Введите название привычки',
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -43,9 +73,10 @@ class AddHabitScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const TextField(
+            TextField(
+              controller: _descriptionController,
               maxLines: 4,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Введите описание (необязательно)',
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.all(16),
@@ -56,7 +87,7 @@ class AddHabitScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: null,
+                    onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       side: const BorderSide(color: Color(0xFF2196F3)),
@@ -73,7 +104,7 @@ class AddHabitScreen extends StatelessWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: null,
+                    onPressed: _save,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2196F3),
                       foregroundColor: Colors.white,
@@ -94,4 +125,3 @@ class AddHabitScreen extends StatelessWidget {
     );
   }
 }
-
