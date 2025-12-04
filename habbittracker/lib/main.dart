@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
-// import 'screens/add_habit_screen.dart';
-// import 'screens/statistics_screen.dart';
+import 'viewmodels/habit_viewmodel.dart';
 
 void main() {
   runApp(const MainApp());
@@ -12,8 +12,11 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: HomeScreen(),
+    return ChangeNotifierProvider(
+      create: (_) => HabitViewModel(),
+      child: const MaterialApp(
+        home: HomeScreen(),
+      ),
     );
   }
 }

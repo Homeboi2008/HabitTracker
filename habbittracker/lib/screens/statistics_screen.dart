@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/habit.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/habit_viewmodel.dart';
+import '../viewmodels/quote_viewmodel.dart';
 
 class StatisticsScreen extends StatelessWidget {
-  final List<Habit> habits;
-
-  const StatisticsScreen({
-    super.key,
-    required this.habits,
-  });
+  const StatisticsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,93 +14,187 @@ class StatisticsScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF2196F3),
         foregroundColor: Colors.white,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Общая статистика:',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF212121),
-              ),
-            ),
-            const SizedBox(height: 24),
-            if (habits.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: Text(
-                    'Нет привычек для отображения статистики',
-                    style: TextStyle(fontSize: 16, color: Color(0xFF757575)),
-                  ),
-                ),
-              )
-            else
-              ...habits.map((habit) => Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: StatisticItem(
-                      habitName: habit.title,
-                      completedDays: habit.completedDays,
-                      targetDays: habit.targetDays,
+      body: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => QuoteViewModel()..loadQuote()),
+        ],
+        child: Consumer2<HabitViewModel, QuoteViewModel>(
+          builder: (context, habitViewModel, quoteViewModel, child) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Общая статистика:',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF212121),
                     ),
-                  )),
-            const SizedBox(height: 32),
-            const Divider(
-              thickness: 1,
-              color: Color(0xFFE0E0E0),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Мотивация:',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF212121),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFFE0E0E0),
-                  width: 1,
-                ),
-              ),
-              child: const Text(
-                '"Путь в тысячу миль начинается с одного шага"',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontStyle: FontStyle.italic,
-                  color: Color(0xFF212121),
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: null,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Обновить цитату'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2196F3),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
                   ),
-                ),
+                  const SizedBox(height: 24),
+                  if (habitViewModel.habits.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Text(
+                          'Нет привычек для отображения статистики',
+                          style: TextStyle(fontSize: 16, color: Color(0xFF757575)),
+                        ),
+                      ),
+                    )
+                  else
+                    ...habitViewModel.habits.map((habit) => Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: StatisticItem(
+                            habitName: habit.title,
+                            completedDays: habit.completedDays,
+                            targetDays: habit.targetDays,
+                          ),
+                        )),
+                  const SizedBox(height: 32),
+                  const Divider(
+                    thickness: 1,
+                    color: Color(0xFFE0E0E0),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Мотивация:',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildQuoteSection(quoteViewModel),
+                  const SizedBox(height: 24),
+                  Center(
+                    child: ElevatedButton.icon(
+                      onPressed: quoteViewModel.isLoading
+                          ? null
+                          : () => quoteViewModel.loadQuote(),
+                      icon: quoteViewModel.isLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.refresh),
+                      label: Text(quoteViewModel.isLoading ? 'Загрузка...' : 'Обновить цитату'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2196F3),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuoteSection(QuoteViewModel viewModel) {
+    if (viewModel.isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (viewModel.error != null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFEBEE),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.red.shade300,
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              viewModel.error!,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.red,
+              ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
           ],
         ),
+      );
+    }
+
+    if (viewModel.quote == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFFE0E0E0),
+            width: 1,
+          ),
+        ),
+        child: const Text(
+          '"Путь в тысячу миль начинается с одного шага"',
+          style: TextStyle(
+            fontSize: 16,
+            fontStyle: FontStyle.italic,
+            color: Color(0xFF212121),
+          ),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFE0E0E0),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Text(
+            '"${viewModel.quote!.content}"',
+            style: const TextStyle(
+              fontSize: 16,
+              fontStyle: FontStyle.italic,
+              color: Color(0xFF212121),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '— ${viewModel.quote!.author}',
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF757575),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

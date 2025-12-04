@@ -1,70 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'add_habit_screen.dart';
 import 'statistics_screen.dart';
-import '../models/habit.dart';
+import '../viewmodels/habit_viewmodel.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final List<Habit> _habits = [
-    Habit(
-      id: '1',
-      title: 'Читать 30 минут',
-      description: 'Описание: чтение книг',
-      completedDays: 15,
-      targetDays: 30,
-      isCompleted: false,
-    ),
-    Habit(
-      id: '2',
-      title: 'Пить воду (8 стаканов)',
-      description: 'Описание: здоровье',
-      completedDays: 20,
-      targetDays: 30,
-      isCompleted: true,
-    ),
-    Habit(
-      id: '3',
-      title: 'Зарядка утром',
-      description: 'Описание: спорт',
-      completedDays: 5,
-      targetDays: 30,
-      isCompleted: false,
-    ),
-  ];
-
-  void _addHabit(String title, String description) {
-    setState(() {
-      _habits.add(Habit(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: title,
-        description: description,
-      ));
-    });
-  }
-
-  void _deleteHabit(String id) {
-    setState(() {
-      _habits.removeWhere((habit) => habit.id == id);
-    });
-  }
-
-  void _toggleHabit(String id) {
-    setState(() {
-      final habit = _habits.firstWhere((h) => h.id == id);
-      habit.isCompleted = !habit.isCompleted;
-      if (habit.isCompleted) {
-        habit.completedDays++;
-      } else {
-        habit.completedDays = habit.completedDays > 0 ? habit.completedDays - 1 : 0;
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => StatisticsScreen(habits: _habits),
+                  builder: (context) => const StatisticsScreen(),
                 ),
               );
             },
@@ -88,64 +29,72 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: _habits.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Нет привычек. Добавьте первую!',
-                      style: TextStyle(fontSize: 16, color: Color(0xFF757575)),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16.0),
-                    itemCount: _habits.length,
-                    itemBuilder: (context, index) {
-                      final habit = _habits[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: HabitCard(
-                          habit: habit,
-                          onToggle: () => _toggleHabit(habit.id),
-                          onDelete: () => _deleteHabit(habit.id),
+      body: Consumer<HabitViewModel>(
+        builder: (context, viewModel, child) {
+          if (viewModel.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return Column(
+            children: [
+              Expanded(
+                child: viewModel.habits.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'Нет привычек. Добавьте первую!',
+                          style: TextStyle(fontSize: 16, color: Color(0xFF757575)),
                         ),
-                      );
-                    },
-                  ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AddHabitScreen(),
-                  ),
-                );
-                if (result != null && result is Map) {
-                  _addHabit(result['title'], result['description']);
-                }
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Добавить привычку'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2196F3),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16.0),
+                        itemCount: viewModel.habits.length,
+                        itemBuilder: (context, index) {
+                          final habit = viewModel.habits[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: HabitCard(
+                              habit: habit,
+                              onToggle: () => viewModel.toggleHabit(habit.id),
+                              onDelete: () => viewModel.deleteHabit(habit.id),
+                            ),
+                          );
+                        },
+                      ),
               ),
-            ),
-          ),
-        ],
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddHabitScreen(),
+                      ),
+                    );
+                    if (result != null && result is Map) {
+                      await viewModel.addHabit(result['title'], result['description']);
+                    }
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Добавить привычку'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2196F3),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
 class HabitCard extends StatelessWidget {
-  final Habit habit;
+  final dynamic habit;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
 
